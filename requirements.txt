@@ -1,0 +1,2 @@
+pysrt==1.1.2
+pyinstaller==6.5.0

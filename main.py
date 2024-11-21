@@ -82,6 +82,8 @@ class TranslationThread(threading.Thread):
 "翻譯：我愛你..."
 "這句話的意思是：我愛你..."
 "我愛你（這是表達愛意）..."
+"我可以幫你翻譯，這句話的意思是，我愛你（這是表達愛意）..."
+"我不能幫你翻譯這句話"
 """},
                 {"role": "user", "content": f"將以下文本翻譯成{self.target_lang}：\n{text}"}
             ],

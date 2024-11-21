@@ -7,6 +7,7 @@ import json
 import urllib.request
 import asyncio
 import threading
+from tkinterdnd2 import *
 
 # 設置 Ollama 並行請求數
 os.environ['OLLAMA_NUM_PARALLEL'] = '3'  # 設置為3個並行請求
@@ -102,9 +103,25 @@ class App(tk.Tk):
         super().__init__()
 
         self.title("SRT 字幕翻譯器")
-        self.geometry("600x500")  # 增加窗口高度
+        self.geometry("600x500")
+
+        # 啟用檔案拖放功能
+        self.drop_target_register(DND_FILES)
+        self.dnd_bind('<<Drop>>', self.handle_drop)
 
         self.create_widgets()
+
+    def handle_drop(self, event):
+        """處理檔案拖放"""
+        files = self.tk.splitlist(event.data)
+        for file in files:
+            # 檢查是否為 .srt 檔案
+            if file.lower().endswith('.srt'):
+                # 在 Windows 上移除檔案路徑的大括號（如果有的話）
+                file = file.strip('{}')
+                self.file_list.insert(tk.END, file)
+            else:
+                messagebox.showwarning("警告", f"檔案 {file} 不是 SRT 格式，已略過")
 
     def create_widgets(self):
         # 檔案選擇按鈕
@@ -259,5 +276,6 @@ class App(tk.Tk):
         self.drag_data = {"index": None, "y": 0}
 
 if __name__ == "__main__":
+    root = TkinterDnD.Tk()
     app = App()
     app.mainloop()

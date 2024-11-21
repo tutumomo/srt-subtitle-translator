@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox, Menu
 import os
 import sys
 import pysrt
@@ -112,9 +112,21 @@ class App(tk.Tk):
         self.file_button.pack(pady=10)
 
         # 檔案列表
-        self.file_list = tk.Listbox(self, width=70, height=10)
+        self.file_list = tk.Listbox(self, width=70, height=10, selectmode=tk.SINGLE)
         self.file_list.pack(pady=10)
-
+        
+        # 綁定滑鼠事件
+        self.file_list.bind('<Button-3>', self.show_context_menu)  # 右鍵選單
+        self.file_list.bind('<B1-Motion>', self.drag_item)         # 拖曳
+        self.file_list.bind('<ButtonRelease-1>', self.drop_item)   # 放開
+        
+        # 創建右鍵選單
+        self.context_menu = Menu(self, tearoff=0)
+        self.context_menu.add_command(label="移除", command=self.remove_selected)
+        
+        # 用於追踪拖曳
+        self.drag_data = {"index": None, "y": 0}
+        
         # 語言選擇
         lang_frame = ttk.Frame(self)
         lang_frame.pack(pady=10)
@@ -198,6 +210,53 @@ class App(tk.Tk):
     def file_translated(self, message):
         current_text = self.status_label.cget("text")
         self.status_label.config(text=f"{current_text}\n{message}")
+
+    def show_context_menu(self, event):
+        """顯示右鍵選單"""
+        try:
+            # 獲取點擊位置對應的項目
+            index = self.file_list.nearest(event.y)
+            if index >= 0:
+                self.file_list.selection_clear(0, tk.END)
+                self.file_list.selection_set(index)
+                self.context_menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            self.context_menu.grab_release()
+
+    def remove_selected(self):
+        """移除選中的項目"""
+        try:
+            selected = self.file_list.curselection()
+            if selected:
+                self.file_list.delete(selected)
+        except Exception as e:
+            messagebox.showerror("錯誤", f"移除檔案時發生錯誤：{str(e)}")
+
+    def drag_item(self, event):
+        """處理項目拖曳"""
+        if self.drag_data["index"] is None:
+            # 開始拖曳
+            index = self.file_list.nearest(event.y)
+            if index >= 0:
+                self.drag_data["index"] = index
+                self.drag_data["y"] = event.y
+        else:
+            # 繼續拖曳
+            new_index = self.file_list.nearest(event.y)
+            if new_index >= 0 and new_index != self.drag_data["index"]:
+                # 獲取要移動的項目內容
+                item = self.file_list.get(self.drag_data["index"])
+                # 刪除原位置
+                self.file_list.delete(self.drag_data["index"])
+                # 插入新位置
+                self.file_list.insert(new_index, item)
+                # 更新拖曳數據
+                self.drag_data["index"] = new_index
+                self.drag_data["y"] = event.y
+
+    def drop_item(self, event):
+        """處理項目放開"""
+        self.drag_data = {"index": None, "y": 0}
 
 if __name__ == "__main__":
     app = App()

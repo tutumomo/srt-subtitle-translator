@@ -8,6 +8,7 @@ import urllib.request
 import asyncio
 import threading
 from tkinterdnd2 import *
+from queue import Queue
 
 # 設置 Ollama 並行請求數
 os.environ['OLLAMA_NUM_PARALLEL'] = '3'  # 設置為3個並行請求
@@ -45,8 +46,11 @@ class TranslationThread(threading.Thread):
         loop.close()
 
         output_path = self.get_output_path()
-        subs.save(output_path, encoding='utf-8')
-        self.complete_callback(f"翻譯完成 | 檔案已成功保存為: {output_path}")
+        if output_path:  # 只有在有效的輸出路徑時才保存
+            subs.save(output_path, encoding='utf-8')
+            self.complete_callback(f"翻譯完成 | 檔案已成功保存為: {output_path}")
+        else:
+            self.complete_callback(f"已跳過檔案: {self.file_path}")
 
     async def translate_batch_async(self, texts):
         loop = asyncio.get_event_loop()
@@ -96,9 +100,35 @@ class TranslationThread(threading.Thread):
         dir_name, file_name = os.path.split(self.file_path)
         name, ext = os.path.splitext(file_name)
         lang_suffix = {"繁體中文": ".zh_tw", "英文": ".en", "日文": ".jp"}
-        return os.path.join(dir_name, f"{name}{lang_suffix[self.target_lang]}{ext}")
+        base_path = os.path.join(dir_name, f"{name}{lang_suffix[self.target_lang]}{ext}")
+        
+        # 檢查檔案是否存在
+        if os.path.exists(base_path):
+            # 發送訊息到主線程處理檔案衝突
+            response = self.handle_file_conflict(base_path)
+            if response == "rename":
+                # 自動重新命名，加上數字後綴
+                counter = 1
+                while True:
+                    new_path = os.path.join(dir_name, f"{name}{lang_suffix[self.target_lang]}_{counter}{ext}")
+                    if not os.path.exists(new_path):
+                        return new_path
+                    counter += 1
+            elif response == "skip":
+                return None
+            # response == "overwrite" 則使用原始路徑
+        
+        return base_path
 
-class App(tk.Tk):
+    def handle_file_conflict(self, file_path):
+        # 使用 Queue 在線程間通信
+        queue = Queue()
+        # 請求主線程顯示對話框
+        self.progress_callback(-1, -1, {"type": "file_conflict", "path": file_path, "queue": queue})
+        # 等待使用者回應
+        return queue.get()
+
+class App(TkinterDnD.Tk):
     def __init__(self):
         super().__init__()
 
@@ -218,11 +248,33 @@ class App(tk.Tk):
 
         self.status_label.config(text=f"正在翻譯 {self.file_list.size()} 個檔案...")
 
-    def update_progress(self, current, total):
-        percentage = int(current / total * 100)
-        self.progress_bar['value'] = percentage
-        self.status_label.config(text=f"正在翻譯第 {current}/{total} 句字幕 ({percentage}%)")
-        self.update_idletasks()
+    def update_progress(self, current, total, extra_data=None):
+        if extra_data and extra_data.get("type") == "file_conflict":
+            # 在主線程中顯示對話框
+            response = messagebox.askyesnocancel(
+                "檔案已存在",
+                f"檔案 {extra_data['path']} 已存在。\n是否覆蓋？\n'是' = 覆蓋\n'否' = 重新命名\n'取消' = 跳過",
+                icon="warning"
+            )
+            
+            # 轉換回應為字符串
+            if response is True:
+                result = "overwrite"
+            elif response is False:
+                result = "rename"
+            else:  # response is None
+                result = "skip"
+            
+            # 將結果發送回翻譯線程
+            extra_data["queue"].put(result)
+            return
+            
+        # 正常的進度更新
+        if current >= 0 and total >= 0:
+            percentage = int(current / total * 100)
+            self.progress_bar['value'] = percentage
+            self.status_label.config(text=f"正在翻譯第 {current}/{total} 句字幕 ({percentage}%)")
+            self.update_idletasks()
 
     def file_translated(self, message):
         current_text = self.status_label.cget("text")
@@ -267,7 +319,7 @@ class App(tk.Tk):
                 self.file_list.delete(self.drag_data["index"])
                 # 插入新位置
                 self.file_list.insert(new_index, item)
-                # 更新拖曳數據
+                # 更新拖曳數���
                 self.drag_data["index"] = new_index
                 self.drag_data["y"] = event.y
 
@@ -276,6 +328,5 @@ class App(tk.Tk):
         self.drag_data = {"index": None, "y": 0}
 
 if __name__ == "__main__":
-    root = TkinterDnD.Tk()
     app = App()
     app.mainloop()

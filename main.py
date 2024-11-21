@@ -83,7 +83,12 @@ class TranslationThread(threading.Thread):
 "這句話的意思是：我愛你..."
 "我愛你（這是表達愛意）..."
 "我可以幫你翻譯，這句話的意思是，我愛你（這是表達愛意）..."
+"你好！我可以幫你翻譯。以下是翻譯結果：「我愛你...」
 "我不能幫你翻譯這句話"
+"您好！以下是翻譯結果：「我愛你...」"
+"您好！我可以協助您翻譯。以下是翻譯結果：「我愛你...」"
+"您要我翻譯什麼內容？請提供需要翻譯的文本，我將嚴格遵守您的要求，只輸出翻譯後的結果。"
+"將以下文本翻譯成繁體中文：「我愛你...」
 """},
                 {"role": "user", "content": f"將以下文本翻譯成{self.target_lang}：\n{text}"}
             ],
@@ -99,9 +104,11 @@ class TranslationThread(threading.Thread):
             return None
 
     def get_output_path(self):
+        # 獲取原始檔案的目錄和檔名
         dir_name, file_name = os.path.split(self.file_path)
         name, ext = os.path.splitext(file_name)
         lang_suffix = {"繁體中文": ".zh_tw", "英文": ".en", "日文": ".jp"}
+        # 在原始檔案的相同目錄下創建新檔案
         base_path = os.path.join(dir_name, f"{name}{lang_suffix[self.target_lang]}{ext}")
         
         # 檢查檔案是否存在
@@ -321,7 +328,7 @@ class App(TkinterDnD.Tk):
                 self.file_list.delete(self.drag_data["index"])
                 # 插入新位置
                 self.file_list.insert(new_index, item)
-                # 更新拖曳數���
+                # 更新拖曳數
                 self.drag_data["index"] = new_index
                 self.drag_data["y"] = event.y
 

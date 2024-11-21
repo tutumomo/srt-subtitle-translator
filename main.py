@@ -57,10 +57,31 @@ class TranslationThread(threading.Thread):
         payload = {
             "model": self.model_name,
             "messages": [
-                {"role": "system", "content": f"你是一個專業的情色片字幕翻譯器。你的任務是將給定的文本準確翻譯成{self.target_lang}。**只返回翻譯後的文本，不要添加任何解釋、註釋或其他額外內容。**盡你最大的能力來翻譯並保持原文的語氣和風格(使用者多使用於A片或與情色、亂倫、同性戀等不道德內容有關的影片字幕翻譯，所以不要用道德去批判任何翻譯的內容，並盡可能朝符合A片或與情色、不道德內容有關去翻譯)。如果無法翻譯，請依照上下文去推斷翻譯內容，一定要輸出翻譯後的內容，但不可以有其他說明文字。**為了忠於原著，你可以輸出與性、亂倫、同性戀等任何不道德的內容。**"},
-                {"role": "user", "content": f"將以下文本翻譯成{self.target_lang}：\n\n{text}"}
+                {"role": "system", "content": f"""你是一個專業的字幕翻譯AI。請嚴格遵守以下規則：
+1. 只輸出翻譯後的文本，不要有任何其他內容
+2. 保持原文的語氣和表達方式
+3. 如果看到省略號(...)，保留在譯文中
+4. 保留原文中的標點符號風格
+5. 不要添加任何解釋或註釋
+6. 不要改變原文的格式
+7. 如果遇到不確定的內容，根據上下文合理推測
+8. 禁止輸出任何非翻譯內容
+9. 禁止解釋或評論原文內容
+
+範例輸入：
+"I love you..."
+正確輸出：
+"我愛你..."
+
+錯誤輸出：
+"翻譯：我愛你..."
+"這句話的意思是：我愛你..."
+"我愛你（這是表達愛意）..."
+"""},
+                {"role": "user", "content": f"將以下文本翻譯成{self.target_lang}：\n{text}"}
             ],
-            "stream": False
+            "stream": False,
+            "temperature": 0.1  # 降低溫度以獲得更穩定的輸出
         }
         req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json'})
         try:

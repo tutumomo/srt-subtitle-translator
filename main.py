@@ -7,8 +7,14 @@ import json
 import urllib.request
 import asyncio
 import threading
-from tkinterdnd2 import *
-from queue import Queue
+
+# 嘗試導入 tkinterdnd2，如果失敗則使用基本的 tkinter
+try:
+    from tkinterdnd2 import *
+    TKDND_AVAILABLE = True
+except ImportError:
+    TKDND_AVAILABLE = False
+    print("警告：未安裝 tkinterdnd2 模組，拖放功能將被停用")
 
 # 設置 Ollama 並行請求數
 os.environ['OLLAMA_NUM_PARALLEL'] = '3'  # 設置為3個並行請求
@@ -137,16 +143,17 @@ class TranslationThread(threading.Thread):
         # 等待使用者回應
         return queue.get()
 
-class App(TkinterDnD.Tk):
+class App(TkinterDnD.Tk if TKDND_AVAILABLE else tk.Tk):
     def __init__(self):
         super().__init__()
 
         self.title("SRT 字幕翻譯器")
         self.geometry("600x500")
 
-        # 啟用檔案拖放功能
-        self.drop_target_register(DND_FILES)
-        self.dnd_bind('<<Drop>>', self.handle_drop)
+        # 只在有 tkinterdnd2 時啟用拖放功能
+        if TKDND_AVAILABLE:
+            self.drop_target_register(DND_FILES)
+            self.dnd_bind('<<Drop>>', self.handle_drop)
 
         self.create_widgets()
 
@@ -308,7 +315,7 @@ class App(TkinterDnD.Tk):
             if selected:
                 self.file_list.delete(selected)
         except Exception as e:
-            messagebox.showerror("錯誤", f"移除檔案時發生錯誤：{str(e)}")
+            messagebox.showerror("錯誤", f"���除檔案時發生錯誤：{str(e)}")
 
     def drag_item(self, event):
         """處理項目拖曳"""

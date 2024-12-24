@@ -20,10 +20,11 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual Environment
+# 虛擬環境
 venv/
 ENV/
 env/
+.env/
 
 # IDE
 .idea/
@@ -31,9 +32,6 @@ env/
 *.swp
 *.swo
 
-# Compiled files
-*.spec
-*.exe
-
-# SRT files (如果你不想將字幕檔案納入版本控制)
-*.srt
+# 作業系統
+.DS_Store
+Thumbs.db

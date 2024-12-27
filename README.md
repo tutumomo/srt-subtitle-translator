@@ -31,9 +31,14 @@ ollama pull aya
 ## 使用方法
 
 1. 運行程式：
-```bash
-python main.py
-```
+   - 使用命令列介面：
+   ```bash
+   python main.py
+   ```
+   - 使用圖形介面：
+   ```bash
+   python main_qt5.py
+   ```
 
 2. 操作說明：
    - 點擊「選擇 SRT 檔案」或直接從檔案總管拖放 .srt 檔案
@@ -53,8 +58,9 @@ python main.py
 
 - 確保 Ollama 服務運行中（http://localhost:11434）
 - 建議使用 aya 模型
-- 並行請求數建議設為 3
+- 並行請求數建議設為 5
 - 翻譯大量字幕時請耐心等待
+- 若遇到翻譯錯誤或不準確的情況，請嘗試更換模型或調整並行請求數
 
 ## 授權協議
 

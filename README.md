@@ -31,7 +31,7 @@ ollama pull aya
 ## 使用方法
 
 1. 運行程式：
-   - 使用命令列介面：
+   - 使用tkinter介面(MAC OS 可能會有問題，所以新增 QT5)：
    ```bash
    python main.py
    ```

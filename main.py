@@ -11,7 +11,7 @@ from tkinterdnd2 import *
 from queue import Queue
 
 # 設置 Ollama 並行請求數
-os.environ['OLLAMA_NUM_PARALLEL'] = '3'  # 設置為3個並行請求
+os.environ['OLLAMA_NUM_PARALLEL'] = '5'  # 設置為5個並行請求
 
 class TranslationThread(threading.Thread):
     def __init__(self, file_path, source_lang, target_lang, model_name, parallel_requests, progress_callback, complete_callback):
@@ -208,7 +208,7 @@ class App(TkinterDnD.Tk):
 
         ttk.Label(model_frame, text="並行請求數:").grid(row=0, column=2)
         self.parallel_requests = ttk.Combobox(model_frame, values=["1", "2", "3", "4", "5"])
-        self.parallel_requests.set("3")
+        self.parallel_requests.set("5")
         self.parallel_requests.grid(row=0, column=3)
 
         # 翻譯按鈕

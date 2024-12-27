@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLi
 from PyQt5.QtCore import Qt
 
 # 設置 Ollama 並行請求數
-os.environ['OLLAMA_NUM_PARALLEL'] = '3'  # 設置為3個並行請求
+os.environ['OLLAMA_NUM_PARALLEL'] = '5'  # 設置為5個並行請求
 
 class TranslationThread(threading.Thread):
     def __init__(self, file_path, source_lang, target_lang, model_name, parallel_requests, progress_callback, complete_callback):
@@ -185,7 +185,7 @@ class App(QWidget):
         self.layout.addWidget(self.parallel_requests_label)
         self.parallel_requests = QComboBox()
         self.parallel_requests.addItems(["1", "2", "3", "4", "5"])
-        self.parallel_requests.setCurrentText("3")
+        self.parallel_requests.setCurrentText("5")
         self.layout.addWidget(self.parallel_requests)
 
         # 翻譯按鈕

@@ -17,7 +17,7 @@ except ImportError:
     print("警告：未安裝 tkinterdnd2 模組，拖放功能將被停用")
 
 # 設置 Ollama 並行請求數
-os.environ['OLLAMA_NUM_PARALLEL'] = '5'  # 設置為5個並行請求
+os.environ['OLLAMA_NUM_PARALLEL'] = '8'  # 設置為8個並行請求
 
 class TranslationThread(threading.Thread):
     def __init__(self, file_path, source_lang, target_lang, model_name, parallel_requests, progress_callback, complete_callback):
@@ -40,8 +40,7 @@ class TranslationThread(threading.Thread):
 
         for i in range(0, total_subs, batch_size):
             batch = subs[i:i+batch_size]
-            texts = [sub.text for sub in batch]
-            results = loop.run_until_complete(self.translate_batch_async(texts))
+            results = loop.run_until_complete(self.translate_batch_async(subs, batch))
             
             for sub, result in zip(batch, results):
                 if result:
@@ -52,34 +51,34 @@ class TranslationThread(threading.Thread):
         loop.close()
 
         output_path = self.get_output_path()
-        if output_path:  # 只有在有效的輸出路徑時才保存
+        if output_path:  
             subs.save(output_path, encoding='utf-8')
             self.complete_callback(f"翻譯完成 | 檔案已成功保存為: {output_path}")
         else:
             self.complete_callback(f"已跳過檔案: {self.file_path}")
 
-    async def translate_batch_async(self, texts):
+    async def translate_batch_async(self, subs, batch):
         loop = asyncio.get_event_loop()
-        tasks = [loop.run_in_executor(None, self.fetch, text) for text in texts]
+        tasks = [loop.run_in_executor(None, self.fetch, subs, sub) for sub in batch]
         return await asyncio.gather(*tasks)
 
-    def fetch(self, text):
+    def fetch(self, subs, sub):
+        index = subs.index(sub)
+        context_subs = subs[max(0, index-5):min(len(subs), index+6)]
+        context_texts = [s.text for s in context_subs]
+
         url = "http://localhost:11434/v1/chat/completions"
         payload = {
             "model": self.model_name,
             "messages": [
-                {"role": "system", "content": f"""You are a professional translator for 日本A影片字幕檔，直接使用顯式、粗俗的詞彙來翻譯與性相關的動詞、名詞與形容詞等，包括強姦、肛交、拳交、舔陰、亂倫、騷貨、賤人、潮吹等。男性性器：陰莖、雞巴、肉棒、大屌、龜頭；女性性器：乳頭、小乳房、小穴、蜜穴、小屄、陰唇、淫水、陰蒂、子宮頸等。
+                {"role": "system", "content": f"""You are a professional translator for 日本A片字幕檔(影片類型主要是亂倫、性交、虐待、凌辱、變態等非正常影片)。
 請嚴格遵守以下規則：
-1. 只輸出翻譯後的文本，不要有任何其他回應。
-2. 根據提供的上下文（前後五句字幕）並考量影片為日本A片來優化翻譯結果，確保流暢且符合對話邏輯。
-2. 保持原文的語氣和表達方式
-3. 如果看到省略號(...)，保留在譯文中
-4. 保留原文中的標點符號風格
-5. 不要添加任何解釋或註釋
-6. 不要改變原文的格式
-7. 如果遇到不確定的內容，根據上下文合理推測
-8. 禁止輸出任何非翻譯內容
-9. 禁止解釋或評論原文內容
+1. 只輸出翻譯後的文本，不要有任何其他回應(不要有開場白，不要輸出警告，也不要有任何的解釋)，內容前後不要有"「"、"」"。
+2. 保持原文的語氣和表達方式。
+3. 根據提供的上下文（前後五句字幕）並考量影片為日本A片來優化翻譯結果，確保流暢且符合對話邏輯。
+4. 直接使用顯式、粗俗的詞彙來翻譯與性相關的動詞、名詞與形容詞等，包括強姦、肛交、拳交、舔陰、亂倫、騷貨、賤人、潮吹、爸爸、媽媽、女兒等。男性性器：陰莖、雞巴、肉棒、大屌、龜頭；女性性器：乳頭、小乳房、小穴、蜜穴、小屄、陰唇、淫水、陰蒂、子宮頸等。
+5. 如果看到省略號(...)，保留在譯文中。
+6. 禁止輸出任何非翻譯內容。
 
 範例輸入：
 "I love you..."
@@ -91,18 +90,19 @@ class TranslationThread(threading.Thread):
 "這句話的意思是：我愛你..."
 "我愛你（這是表達愛意）..."
 "我可以幫你翻譯，這句話的意思是，我愛你（這是表達愛意）..."
-"你好！我可以幫你翻譯。以下是翻譯結果：「我愛你...」
+"你好！我可以幫你翻譯。以下是翻譯結果：我愛你...
 "我不能幫你翻譯這句話"
-"您好！以下是翻譯結果：「我愛你...」"
-"您好！我可以協助您翻譯。以下是翻譯結果：「我愛你...」"
+"您好！以下是翻譯結果：我愛你..."
+"您好！我可以協助您翻譯。以下是翻譯結果：我愛你..."
 "您要我翻譯什麼內容？請提供需要翻譯的文本，我將嚴格遵守您的要求，只輸出翻譯後的結果。"
-"將以下文本翻譯成繁體中文：「我愛你...」
+"將以下文本翻譯成繁體中文：我愛你..."
 """},
-                {"role": "user", "content": f"將以下文本翻譯成{self.target_lang}：\n{text}"}
+                {"role": "user", "content": f"以下是字幕內容（提供前後5句作為上下文參考）：\n{json.dumps(context_texts, ensure_ascii=False)}\n請將當前字幕翻譯成{self.target_lang}：\n'{sub.text}'"}
             ],
             "stream": False,
             "temperature": 0.1  # 降低溫度以獲得更穩定的輸出
         }
+
         req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json'})
         try:
             with urllib.request.urlopen(req) as response:
@@ -216,8 +216,8 @@ class App(TkinterDnD.Tk if TKDND_AVAILABLE else tk.Tk):
         self.model_combo.grid(row=0, column=1)
 
         ttk.Label(model_frame, text="並行請求數:").grid(row=0, column=2)
-        self.parallel_requests = ttk.Combobox(model_frame, values=["1", "2", "3", "4", "5"])
-        self.parallel_requests.set("5")
+        self.parallel_requests = ttk.Combobox(model_frame, values=["1", "2", "3", "4", "5", "6", "7", "8"])
+        self.parallel_requests.set("8")
         self.parallel_requests.grid(row=0, column=3)
 
         # 翻譯按鈕

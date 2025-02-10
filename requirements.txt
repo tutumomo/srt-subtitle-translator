@@ -1,2 +1,2 @@
-pysrt
-tkinterdnd2
+pysrt>=1.1.2
+tkinterdnd2>=0.3.0

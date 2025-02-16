@@ -217,7 +217,7 @@ class App(TkinterDnD.Tk if TKDND_AVAILABLE else tk.Tk):
 
         ttk.Label(model_frame, text="並行請求數:").grid(row=0, column=2)
         self.parallel_requests = ttk.Combobox(model_frame, values=["1", "2", "3", "4", "5", "6", "7", "8"])
-        self.parallel_requests.set("8")
+        self.parallel_requests.set("6")
         self.parallel_requests.grid(row=0, column=3)
 
         # 翻譯按鈕
